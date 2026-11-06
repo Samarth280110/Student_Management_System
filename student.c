@@ -1,4 +1,6 @@
+
 #include <stdio.h>
+#include <string.h>
 
 struct Student {
     int roll;
@@ -9,166 +11,172 @@ struct Student {
 struct Student s[100];
 int count = 0;
 
-// Load all records from the file "data"
-void loadData() {
+void line() {
+    printf("-------------------------------------\n");
+}
+
+void load() {
     FILE *f = fopen("data", "r");
-    if (f == NULL) return;   // no file yet, start empty
+    if (f == NULL) return;
 
     while (count < 100 &&
-           fscanf(f, "%d %s %f", &s[count].roll, s[count].name, &s[count].marks) == 3) {
+           fscanf(f, "%d %49s %f",
+           &s[count].roll, s[count].name,
+           &s[count].marks) == 3) {
         count++;
     }
+
     fclose(f);
 }
 
-// Save all records to the file "data"
-void saveData() {
-    int i;
+void save() {
     FILE *f = fopen("data", "w");
     if (f == NULL) {
-        printf("Error: could not save data!\n");
+        printf("Error saving data!\n");
         return;
     }
 
-    for (i = 0; i < count; i++) {
-        fprintf(f, "%d %s %.2f\n", s[i].roll, s[i].name, s[i].marks);
+    for (int i = 0; i < count; i++) {
+        fprintf(f, "%d %s %.2f\n",
+                s[i].roll, s[i].name, s[i].marks);
     }
+
     fclose(f);
 }
 
-void addStudent() {
-    printf("\n=====================================\n");
-    printf("Enter roll number: ");
-    scanf("%d", &s[count].roll);
+int getInt(char msg[]) {
+    int n;
+    char ch;
 
-    printf("Enter name: ");
-    scanf(" %s", s[count].name);
+    printf("%s", msg);
+    while (scanf("%d%c", &n, &ch) != 2 || ch != '\n') {
+        while (getchar() != '\n');
+        printf("Enter a valid number: ");
+    }
 
-    printf("Enter marks: ");
-    scanf("%f", &s[count].marks);
-
-    count++;
-    saveData();
-
-    printf("=====================================\n");
-    printf("Student added successfully!\n");
-    printf("=====================================\n");
+    return n;
 }
 
-void displayStudents() {
-    int i;
+float getMarks() {
+    float m;
+    char ch;
 
+    printf("Enter marks: ");
+    while (scanf("%f%c", &m, &ch) != 2 ||
+           ch != '\n' || m < 0 || m > 100) {
+        while (getchar() != '\n');
+        printf("Enter marks between 0 and 100: ");
+    }
+
+    return m;
+}
+
+int find(int roll) {
+    for (int i = 0; i < count; i++) {
+        if (s[i].roll == roll)
+            return i;
+    }
+
+    return -1;
+}
+
+void add() {
+    if (count >= 100) {
+        printf("Student limit reached!\n");
+        return;
+    }
+
+    int roll = getInt("Enter roll number: ");
+
+    if (roll <= 0 || find(roll) != -1) {
+        printf("Invalid or duplicate roll number!\n");
+        return;
+    }
+
+    s[count].roll = roll;
+
+    printf("Enter name: ");
+    scanf(" %49[^\n]", s[count].name);
+
+    s[count].marks = getMarks();
+
+    count++;
+    save();
+
+    printf("Student added successfully!\n");
+}
+
+void display() {
     if (count == 0) {
         printf("No records found!\n");
         return;
     }
 
-    printf("\n=====================================\n");
-    printf("            STUDENT RECORDS\n");
-    printf("=====================================\n");
+    line();
+    printf("          STUDENT RECORDS\n");
+    line();
 
-    for (i = 0; i < count; i++) {
-        printf("\nRoll Number: %d\n", s[i].roll);
+    for (int i = 0; i < count; i++) {
+        printf("Roll: %d\n", s[i].roll);
         printf("Name: %s\n", s[i].name);
         printf("Marks: %.2f\n", s[i].marks);
-        printf("-------------------------------------\n");
+        line();
     }
-    printf("=====================================\n");
 }
 
-void searchStudent() {
-    int roll, i;
+void search() {
+    int roll = getInt("Enter roll number to search: ");
+    int i = find(roll);
 
-    printf("\n=====================================\n");
-    printf("Enter roll number to search: ");
-    scanf("%d", &roll);
-
-    for (i = 0; i < count; i++) {
-        if (s[i].roll == roll) {
-            printf("=====================================\n");
-            printf("Name: %s\n", s[i].name);
-            printf("Marks: %.2f\n", s[i].marks);
-            printf("=====================================\n");
-            return;
-        }
+    if (i == -1) {
+        printf("Student not found!\n");
+        return;
     }
 
-    printf("Student not found!\n");
-    printf("=====================================\n");
+    printf("Name: %s\n", s[i].name);
+    printf("Marks: %.2f\n", s[i].marks);
 }
 
-void editStudent() {
-    int roll, i;
+void edit() {
+    int roll = getInt("Enter roll number to edit: ");
+    int i = find(roll);
 
-    printf("\n=====================================\n");
-    printf("Enter roll number to edit: ");
-    scanf("%d", &roll);
-
-    for (i = 0; i < count; i++) {
-        if (s[i].roll == roll) {
-            printf("Enter new name: ");
-            scanf(" %s", s[i].name);
-
-            printf("Enter new marks: ");
-            scanf("%f", &s[i].marks);
-
-            saveData();
-
-            printf("=====================================\n");
-            printf("Student updated successfully!\n");
-            printf("=====================================\n");
-            return;
-        }
+    if (i == -1) {
+        printf("Student not found!\n");
+        return;
     }
 
-    printf("Student not found!\n");
-    printf("=====================================\n");
+    printf("Enter new name: ");
+    scanf(" %49[^\n]", s[i].name);
+
+    s[i].marks = getMarks();
+
+    save();
+    printf("Student updated successfully!\n");
 }
 
 int main() {
     int choice;
 
-    loadData();
+    load();
 
     do {
-        printf("\n=====================================");
-        printf("\n--- Student Management System ---\n");
-        printf("=====================================\n");
+        printf("\n===== STUDENT MANAGEMENT =====\n");
         printf("1. Add Student\n");
         printf("2. Display Students\n");
         printf("3. Search Student\n");
         printf("4. Edit Student\n");
         printf("5. Exit\n");
-        printf("=====================================\n");
-        printf("Enter choice: ");
-        scanf("%d", &choice);
+
+        choice = getInt("Enter choice: ");
 
         switch (choice) {
-            case 1:
-                if (count < 100)
-                    addStudent();
-                else
-                    printf("Student limit reached!\n");
-                break;
-
-            case 2:
-                displayStudents();
-                break;
-
-            case 3:
-                searchStudent();
-                break;
-
-            case 4:
-                editStudent();
-                break;
-
-            case 5:
-                printf("Exiting program...\n");
-                break;
-
-            default:
-                printf("Invalid choice!\n");
+            case 1: add(); break;
+            case 2: display(); break;
+            case 3: search(); break;
+            case 4: edit(); break;
+            case 5: printf("Exiting program...\n"); break;
+            default: printf("Invalid choice!\n");
         }
 
     } while (choice != 5);
